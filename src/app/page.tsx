@@ -6,6 +6,7 @@ import { Pipeline, Card } from '@/types/pipeline';
 import { INITIAL_PIPELINES, INITIAL_CARDS, DEFAULT_STAGE_TEMPLATES } from '@/lib/storage/mockData';
 import { Navbar } from '@/components/layout/Navbar';
 import { createClient } from '@/lib/supabase/client';
+import { fetchUserData, upsertCardToSupabase } from '@/lib/supabase/sync';
 import { Info, Sparkles } from 'lucide-react';
 
 // Carregamento dinâmico sem SSR para componentes interativos de drag-and-drop
@@ -34,6 +35,8 @@ export default function Home() {
   const [user, setUser] = useState<{ email?: string; name?: string; avatarUrl?: string } | null>(null);
   const [isSupabaseConfigured, setIsSupabaseConfigured] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+
+  const [userId, setUserId] = useState<string | null>(null);
 
   // Inicialização do estado local / Supabase
   useEffect(() => {
@@ -65,6 +68,16 @@ export default function Home() {
     if (supabase) {
       setIsSupabaseConfigured(true);
 
+      const loadUserCloudData = async (uid: string) => {
+        setUserId(uid);
+        const cloudData = await fetchUserData(supabase, uid);
+        if (cloudData && cloudData.pipelines.length > 0) {
+          setPipelines(cloudData.pipelines);
+          setActivePipelineId(cloudData.pipelines[0].id);
+          setCards(cloudData.cards);
+        }
+      };
+
       // Obter usuário logado atual
       supabase.auth.getUser().then(({ data: { user } }) => {
         if (user) {
@@ -73,6 +86,7 @@ export default function Home() {
             name: user.user_metadata?.full_name || user.email?.split('@')[0],
             avatarUrl: user.user_metadata?.avatar_url,
           });
+          loadUserCloudData(user.id);
         }
       });
 
@@ -84,8 +98,10 @@ export default function Home() {
             name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
             avatarUrl: session.user.user_metadata?.avatar_url,
           });
+          loadUserCloudData(session.user.id);
         } else {
           setUser(null);
+          setUserId(null);
         }
       });
 
@@ -97,13 +113,24 @@ export default function Home() {
     setIsLoaded(true);
   }, []);
 
-  // Salvar no LocalStorage sempre que houver alteração
+  // Salvar no LocalStorage e no Supabase sempre que houver alteração
   const handleUpdateCards = (newCards: Card[]) => {
     setCards(newCards);
     try {
       localStorage.setItem(STORAGE_CARDS_KEY, JSON.stringify(newCards));
     } catch (e) {
       console.error('Erro ao salvar cards no LocalStorage:', e);
+    }
+
+    // Sincronizar com Supabase se estiver conectado e logado
+    if (userId) {
+      const supabase = createClient();
+      if (supabase) {
+        // Encontra cards que foram criados/modificados para sincronizar
+        newCards.forEach((card) => {
+          upsertCardToSupabase(supabase, card, userId);
+        });
+      }
     }
   };
 

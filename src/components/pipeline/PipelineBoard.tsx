@@ -238,9 +238,9 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
       );
       onUpdateCards(updated);
     } else {
-      // Criação de novo card
+      // Criação de novo card com UUID válido
       const newCard: Card = {
-        id: `card-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `card-${Date.now()}`,
         order: cards.filter((c) => c.stageId === cardData.stageId).length,
         ...cardData,
       };
