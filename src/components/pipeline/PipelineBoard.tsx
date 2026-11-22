@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -34,7 +34,12 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
   cards,
   onUpdateCards,
 }) => {
+  const [isMounted, setIsMounted] = useState(false);
   const [activeCard, setActiveCard] = useState<Card | null>(null);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Estados dos modais
   const [cardModalOpen, setCardModalOpen] = useState(false);
@@ -288,6 +293,17 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
 
   const currentBlockedCardTitle =
     cards.find((c) => c.id === pendingBlockedCard?.cardId)?.title || '';
+
+  if (!isMounted) {
+    return (
+      <div className="w-full flex-1 flex items-center justify-center p-8 text-zinc-400 text-sm">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse" />
+          <span>Carregando pipeline...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex-1 flex flex-col overflow-hidden">

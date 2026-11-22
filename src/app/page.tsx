@@ -1,12 +1,28 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import { Pipeline, Card } from '@/types/pipeline';
 import { INITIAL_PIPELINES, INITIAL_CARDS, DEFAULT_STAGE_TEMPLATES } from '@/lib/storage/mockData';
-import { PipelineBoard } from '@/components/pipeline/PipelineBoard';
 import { Navbar } from '@/components/layout/Navbar';
 import { createClient } from '@/lib/supabase/client';
 import { Info, Sparkles } from 'lucide-react';
+
+// Carregamento dinâmico sem SSR para componentes interativos de drag-and-drop
+const PipelineBoard = dynamic(
+  () => import('@/components/pipeline/PipelineBoard').then((mod) => mod.PipelineBoard),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex-1 flex items-center justify-center p-8 text-zinc-400 text-sm">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse" />
+          <span>Carregando pipeline...</span>
+        </div>
+      </div>
+    ),
+  }
+);
 
 const STORAGE_PIPELINES_KEY = 'todo_pipeline_pipelines_v1';
 const STORAGE_CARDS_KEY = 'todo_pipeline_cards_v1';
