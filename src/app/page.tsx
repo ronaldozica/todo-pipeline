@@ -7,7 +7,7 @@ import { INITIAL_PIPELINES, INITIAL_CARDS, DEFAULT_STAGE_TEMPLATES } from '@/lib
 import { Navbar } from '@/components/layout/Navbar';
 import { createClient } from '@/lib/supabase/client';
 import { fetchUserData, upsertCardToSupabase } from '@/lib/supabase/sync';
-import { Info, Sparkles } from 'lucide-react';
+import { LoginPromptBanner } from '@/components/ui/LoginPromptBanner';
 
 // Carregamento dinâmico sem SSR para componentes interativos de drag-and-drop
 const PipelineBoard = dynamic(
@@ -222,16 +222,12 @@ export default function Home() {
         onSignOut={handleSignOut}
       />
 
-      {/* Banner Informativo se o Supabase ainda não estiver com as chaves preenchidas */}
-      {!isSupabaseConfigured && (
-        <div className="bg-indigo-50/80 dark:bg-indigo-950/40 border-b border-indigo-100 dark:border-indigo-900/50 px-4 md:px-6 py-2 text-xs text-indigo-900 dark:text-indigo-200 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
-            <span>
-              <strong>Modo Local Ativo:</strong> Seus pipelines e tarefas estão sendo salvos com segurança no seu navegador. Para sincronização entre PC e Celular com Login Google gratuito, configure o <code>.env.local</code>.
-            </span>
-          </div>
-        </div>
+      {/* Banner de incentivo ao login — aparece quando o usuário não está logado */}
+      {!user && (
+        <LoginPromptBanner
+          onSignIn={handleSignInWithGoogle}
+          isSupabaseConfigured={isSupabaseConfigured}
+        />
       )}
 
       {/* Área do Pipeline Board */}
